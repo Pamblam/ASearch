@@ -17,6 +17,12 @@ class ASearch{
 	private static $pdo;
 	
 	/**
+	 * "MYSQL" or "ORACLE"
+	 * @var string 
+	 */
+	private $DBMS = "MYSQL";
+	
+	/**
 	 * Name of the table or view to search in
 	 * @var string
 	 */
@@ -46,6 +52,12 @@ class ASearch{
 	 */
 	private $JSHandler = "";
 	
+	/**
+	 * Maximum number of rows to return from the DB
+	 * @var int
+	 */
+	private $RowLimit = 500;
+	
 	############################################################################
 	## Public Methods ##########################################################
 	############################################################################
@@ -62,6 +74,10 @@ class ASearch{
 		$this->table_or_view = $table_or_view;
 		$this->errors = array();
 		$this->loadColumns();
+	}
+	
+	public function useOracle(){
+		$this->DBMS = "ORACLE";
 	}
 	
 	/**
@@ -96,6 +112,14 @@ class ASearch{
 	 */
 	public function getColumns(){
 		return $this->cols;
+	}
+	
+	/**
+	 * Set the maximum number of rows to be returned
+	 * @param int $limit
+	 */
+	public function setRowLimit($limit){
+		$this->RowLimit = intval($limit);
 	}
 	
 	/**
@@ -276,6 +300,7 @@ class ASearch{
 	public function checkAJAX(){
 		if(empty($_POST['ASaction'])) return;
 		$return = array("success"=>true, "message"=>"Success!", "data"=>array());
+		$limit = $this->DBMS == "MYSQL" ? "LIMIT ".$this->RowLimit : "AND ROWNUM < ".$this->RowLimit;
 		try{
 			switch($_POST['ASaction']){
 				// Get unique column values
@@ -291,7 +316,7 @@ class ASearch{
 						break;
 					}
 					try{
-						$q = self::$pdo->query("SELECT DISTINCT {$_POST['column']} FROM {$this->table_or_view} WHERE ROWNUM < 500");
+						$q = self::$pdo->query("SELECT DISTINCT {$_POST['column']} FROM {$this->table_or_view} WHERE 1=1 $limit");
 						if(!$q){
 							$return['message'] = "Unable to get fetch columns for {$_POST['column']}.";
 							$return['success'] = false;
@@ -309,12 +334,15 @@ class ASearch{
 						$return['message'] = "The 'column' paramter is missing from your request.";
 						break;
 					}
-					$sql = "SELECT ".implode(', ', $this->cols)." FROM (SELECT * FROM {$this->table_or_view} WHERE ";
+					$cols = $this->DBMS == "MYSQL" ? 
+						"`".implode('`, `', $this->cols)."`" : 
+						implode(', ', $this->cols);
+					$sql = "SELECT $cols FROM {$this->table_or_view} WHERE 1=1 AND ";
 					$first = true; $lastConjunction = "";
 					foreach($_POST['criteria'] as $c){
 						if(empty($c)) continue;
 						if(!$first) $sql .= $c['conjunction']." ";
-						$sql .= $c['column']." ";
+						$sql .= $this->DBMS == "MYSQL" ? "`{$c['column']}` " : $c['column']." ";
 						switch(strtolower($c['operator'])){
 							case "contains": $sql .= "LIKE '%{$c['value']}%' "; break;
 							case "does not equal": $sql .= "!= '{$c['value']}' "; break;
@@ -323,12 +351,12 @@ class ASearch{
 						$lastConjunction = $c['conjunction'];
 						$first = false;
 					}
-					$sql = substr($sql, 0, strlen($sql)+1);
-					$sql .= ") WHERE ROWNUM < 500";
+					$sql = trim(substr($sql, 0, strlen($sql)+1));
+					$sql .= " $limit";
 					try{
 						$q = self::$pdo->query($sql);
 						if(!$q){
-							$return['message'] = "Unable to get fetch data for {$_POST['column']}.";
+							$return['message'] = "Unable to get fetch data.";
 							$return['success'] = false;
 						}
 						$return['data'] = $q->fetchAll(PDO::FETCH_ASSOC);
@@ -355,9 +383,10 @@ class ASearch{
 	 * Load column information
 	 */
 	private function loadColumns(){
+		$limit = $this->DBMS == "MYSQL" ? "LIMIT 1" : "WHERE ROWNUM = 1";
 		try{
 			// Get column names
-			$Q = self::$pdo->query("SELECT * FROM {$this->table_or_view} WHERE ROWNUM = 1");
+			$Q = self::$pdo->query("SELECT * FROM {$this->table_or_view} $limit");
 			$cols = $Q->fetch(PDO::FETCH_ASSOC);
 			if(empty($cols)) $this->error("Not able to gather column data from {$this->table_or_view}");
 			$this->cols = array_keys($cols);
