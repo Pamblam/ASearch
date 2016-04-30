@@ -58,6 +58,12 @@ class ASearch{
 	 */
 	private $RowLimit = 500;
 	
+	/**
+	 * Set of conditions used to limit search results
+	 * @var array
+	 */
+	private $conditions = array();
+	
 	############################################################################
 	## Public Methods ##########################################################
 	############################################################################
@@ -76,8 +82,19 @@ class ASearch{
 		$this->loadColumns();
 	}
 	
+	/**
+	 * Call this function if using Oracle instead of MySQL
+	 */
 	public function useOracle(){
 		$this->DBMS = "ORACLE";
+	}
+	
+	/**
+	 * Add a condition that will limit search results
+	 * @param string $condition
+	 */
+	public function addCondition($condition){
+		$this->conditions[] = $condition;
 	}
 	
 	/**
@@ -334,6 +351,7 @@ class ASearch{
 						$return['message'] = "The 'column' paramter is missing from your request.";
 						break;
 					}
+					$conditions = $this->buildConditionals();
 					$cols = $this->DBMS == "MYSQL" ? 
 						"`".implode('`, `', $this->cols)."`" : 
 						implode(', ', $this->cols);
@@ -352,7 +370,7 @@ class ASearch{
 						$first = false;
 					}
 					$sql = trim(substr($sql, 0, strlen($sql)+1));
-					$sql .= " $limit";
+					$sql .= " $conditions $limit";
 					try{
 						$q = self::$pdo->query($sql);
 						if(!$q){
@@ -378,6 +396,14 @@ class ASearch{
 	############################################################################
 	## Private Methods #########################################################
 	############################################################################
+	
+	/**
+	 * Build the part of the query that will make limitations
+	 */
+	private function buildConditionals(){
+		if(empty($this->conditions)) return "";
+		return "AND (".implode(" AND ", $this->conditions).")";
+	}
 	
 	/**
 	 * Load column information

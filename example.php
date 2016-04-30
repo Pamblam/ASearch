@@ -24,7 +24,11 @@ $ASearch->omitCols(array("vid", "password", "adf_email",
 	'phone','aphone','cphone','hours','photo1','photo2',
 	'lat','long','sig','letters','letterhead','time_offset',
 	'print_reminder','ct_email','rcid','recs_pw',
-	'pc','ref','imgopts','email'));
+	'pc','ref','imgopts','email','admin'));
+
+// Add a condition
+// in this example we'll make sure only non-admins are returned in the results
+$ASearch->addCondition("admin = 'no'");
 
 // This line handles all ajax stuff for the page
 $ASearch->checkAJAX();
