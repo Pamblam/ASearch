@@ -74,9 +74,13 @@ class ASearch{
 	 * @param PDO Resource $pdo
 	 */
 	public function __construct($table_or_view, $pdo=null){
-		if(headers_sent()) $this->error("ASearch must be initialised before any headers are sent.");
+		if(strpos($table_or_view, " ") !== false) 
+			$table_or_view = "(".$table_or_view.") ast";
+		if(headers_sent()) 
+			$this->error("ASearch must be initialised before any headers are sent.");
 		if(!empty($pdo)) self::$pdo = $pdo;
-		if(empty(self::$pdo)) $this->error("No database connection provided", true);
+		if(empty(self::$pdo)) 
+			$this->error("No database connection provided", true);
 		$this->table_or_view = $table_or_view;
 		$this->errors = array();
 		$this->loadColumns();
