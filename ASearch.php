@@ -20,7 +20,7 @@ class ASearch{
 	 * "MYSQL" or "ORACLE"
 	 * @var string 
 	 */
-	private $DBMS = "MYSQL";
+	private static $DBMS = "MYSQL";
 	
 	/**
 	 * Name of the table or view to search in
@@ -85,8 +85,8 @@ class ASearch{
 	/**
 	 * Call this function if using Oracle instead of MySQL
 	 */
-	public function useOracle(){
-		$this->DBMS = "ORACLE";
+	public static function useOracle(){
+		self::$DBMS = "ORACLE";
 	}
 	
 	/**
@@ -317,7 +317,7 @@ class ASearch{
 	public function checkAJAX(){
 		if(empty($_POST['ASaction'])) return;
 		$return = array("success"=>true, "message"=>"Success!", "data"=>array());
-		$limit = $this->DBMS == "MYSQL" ? "LIMIT ".$this->RowLimit : "AND ROWNUM < ".$this->RowLimit;
+		$limit = self::$DBMS == "MYSQL" ? "LIMIT ".$this->RowLimit : "AND ROWNUM < ".$this->RowLimit;
 		try{
 			switch($_POST['ASaction']){
 				// Get unique column values
@@ -352,7 +352,7 @@ class ASearch{
 						break;
 					}
 					$conditions = $this->buildConditionals();
-					$cols = $this->DBMS == "MYSQL" ? 
+					$cols = self::$DBMS == "MYSQL" ? 
 						"`".implode('`, `', $this->cols)."`" : 
 						implode(', ', $this->cols);
 					$sql = "SELECT $cols FROM {$this->table_or_view} WHERE 1=1 AND ";
@@ -360,7 +360,7 @@ class ASearch{
 					foreach($_POST['criteria'] as $c){
 						if(empty($c)) continue;
 						if(!$first) $sql .= $c['conjunction']." ";
-						$sql .= $this->DBMS == "MYSQL" ? "`{$c['column']}` " : $c['column']." ";
+						$sql .= self::$DBMS == "MYSQL" ? "`{$c['column']}` " : $c['column']." ";
 						switch(strtolower($c['operator'])){
 							case "contains": $sql .= "LIKE '%{$c['value']}%' "; break;
 							case "does not equal": $sql .= "!= '{$c['value']}' "; break;
@@ -409,7 +409,7 @@ class ASearch{
 	 * Load column information
 	 */
 	private function loadColumns(){
-		$limit = $this->DBMS == "MYSQL" ? "LIMIT 1" : "WHERE ROWNUM = 1";
+		$limit = self::$DBMS == "MYSQL" ? "LIMIT 1" : "WHERE ROWNUM = 1";
 		try{
 			// Get column names
 			$Q = self::$pdo->query("SELECT * FROM {$this->table_or_view} $limit");

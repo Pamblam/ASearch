@@ -16,6 +16,9 @@ $table = "users";
 // Create a database connection w/ PDO
 $pdo = new PDO('mysql:host='.$host.';dbname='.$database.';charset=utf8', $user, $password);
 
+// Must be called before the construtor if using oracle
+ASearch::useOracle();
+
 // Set up advanced search object
 $ASearch = new ASearch($table, $pdo);
 
