@@ -1,5 +1,5 @@
-#ASearch 
-###Universal Advanced Search Plugin 
+# ASearch 
+### Universal Advanced Search Plugin 
 
 ASearch is a PHP Class that provides all the components needed to create an advanced search widget for a MySQL or Oracle  table or view.
 
